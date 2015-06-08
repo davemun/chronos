@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chronos</title>
+  <script src="/opentok.js"></script>
+</head>
+<body>
+  <button onclick="publishHiScreen(true)">Publish a 720p screenshare</button>
+  <button onclick="publishHiScreen(false)">Stop 720p screenshare</button>
+  <br>
+  
+  <button onclick="publishLoScreen(true)">Publish a 360p screenshare</button>
+  <button onclick="publishLoScreen(false)">Stop 360p screenshare</button>
+  <br>
+  
+
+  <button onclick="publishHiCam(true)">Publish a 720p webcam</button>
+  <button onclick="publishHiCam(false)">Stop 720p webcam</button>
+  <br>
+  
+
+  <button onclick="publishLoCam(true)">Publish a 480p webcam</button>
+  <button onclick="publishLoCam(false)">Stop 480p webcam</button>
+  <br>
+  
+
+  <button id="start-sub" onclick="enableSubscribe()">Start Subscribing</button>
+  <button id="stop-sub" onclick="disableSubscribe()">Stop Subscribing</button>
+
+  <div id="timerContainer">
+    <div id="hi-screen-times"> Hi-Res Screen Timers
+      <h2 id="hi-screen-avg"></h2>
+    </div>
+    <div id="lo-screen-times"> Lo-Res Screen Timers
+      <h2 id="lo-screen-avg"></h2>
+    </div>
+    <div id="hi-cam-times"> Hi-Res Cam Timers
+      <h2 id="hi-cam-avg"></h2>      
+    </div>
+    <div id="lo-cam-times"> Lo-Res Cam Timers
+      <h2 id="lo-cam-avg"></h2>      
+    </div>
+  </div>
+  
+  <script>
+    var subscribeEnabled = false;
+    var publishers = {};
+    var subscriber;
+    var timeAvgs = {};
+    timeAvgs.hiScreen = [];
+    timeAvgs.loScreen = [];
+    timeAvgs.hiCam = [];
+    timeAvgs.loCam = [];    
+    var startTime;
+
+    //OpenTok controller
+    var session = OT.initSession("45230542", "1_MX40NTIzMDU0Mn5-MTQzMzc5MTc2MzM1N35VNzBqNHZkQnY4RWVPSUV2R3VIdk5nTSt-fg");
+
+    OT.registerScreenSharingExtension('chrome', 'jkjkdegdhdmhmpcpacobbichgoceicaf');
+
+    session.on("streamCreated", function(event) {
+       startTime = new Date().getTime();
+       subscriber = session.subscribe(event.stream, function (err) {
+         timerHandler(err, event);
+       });
+    }).connect("T1==cGFydG5lcl9pZD00NTIzMDU0MiZzaWc9OTc4NzllMzAzZjJjY2ZiZmQ2ODRlZWMyZTgxZDViMGE2MDYyYzVhZTpyb2xlPXB1Ymxpc2hlciZzZXNzaW9uX2lkPTFfTVg0ME5USXpNRFUwTW41LU1UUXpNemM1TVRjMk16TTFOMzVWTnpCcU5IWmtRblk0UldWUFNVVjJSM1ZJZGs1blRTdC1mZyZjcmVhdGVfdGltZT0xNDMzNzkxODg0Jm5vbmNlPTAuMTcxOTc3MDg0NTQyNTA1MDQmZXhwaXJlX3RpbWU9MTQzNDM5NjUyMCZjb25uZWN0aW9uX2RhdGE9");
+
+    function timerHandler (err, event) {
+      if (err) console.log(err);
+
+      var endTime = new Date().getTime();
+      var splitTime = endTime - startTime;
+      var time = document.createElement("div");
+      var width = event.stream.videoDimensions.width;
+      var height = event.stream.videoDimensions.height;
+      var type = event.stream.videoType;
+      var container, avgHandle;
+
+      if (type === "screen" && height === 720) {
+        container = document.getElementById("hi-screen-times");
+        avgHandle = "hiScreen";
+        avgEl = document.getElementById("hi-screen-avg");
+      } else if (type === "screen" && height === 360) {
+        container = document.getElementById("lo-screen-times");
+        avgHandle = "loScreen";
+        avgEl = document.getElementById("lo-screen-avg");
+      } else if (type === "camera" && height === 720) {
+        container = document.getElementById("hi-cam-times");
+        avgHandle = "hiCam";
+        avgEl = document.getElementById("hi-cam-avg");
+      } else if (type === "camera" && height === 480) {
+        container = document.getElementById("lo-cam-times");
+        avgHandle = "loCam";      
+        avgEl = document.getElementById("lo-cam-avg");
+      } else {
+        console.log("Error: Unexpected stream size or type.");
+        return;
+      }
+
+      var subscribeTime = document.createDocumentFragment();
+      time.textContent = "" + splitTime + "ms for a " + width + "x" + height + " " + type + " stream";
+      subscribeTime.appendChild(time);
+      container.appendChild(subscribeTime);
+      timeAvgs[avgHandle].push(splitTime);
+      var newAvg = getAvg(timeAvgs[avgHandle]);
+      avgEl.textContent = newAvg + "ms";
+
+      session.unsubscribe(subscriber, function () {
+        //Recursively resubscribe
+        startTime = new Date().getTime();      
+        if (subscribeEnabled) {
+          subscriber = session.subscribe(event.stream, function () {
+            timerHandler(err, event);
+          });
+        }                
+      });
+    }
+
+    function disableSubscribe () {
+      subscribeEnabled = false;
+    }
+
+    function enableSubscribe () {
+      subscribeEnabled = true;
+    }
+
+
+    //Publishing Code
+    function publishHiScreen (bool) {
+      bool = bool || false;
+      if (!bool) {
+        if (publishers.hiScreen) {
+          publishers.hiScreen.destroy();
+        }
+        return;
+      }
+      publishers.hiScreen = OT.initPublisher(null, {videoSource: "screen", maxResolution: { width: 1280, height: 720 }});
+      session.publish(publishers.hiScreen);
+    }
+
+    function publishLoScreen (bool) {
+      bool = bool || false;
+      if (!bool) {
+        if (publishers.loScreen) {
+          publishers.loScreen.destroy();
+        }
+        return;
+      }
+      publishers.loScreen = OT.initPublisher(null, {videoSource: "screen", maxResolution: { width: 640, height: 360 }});      
+      session.publish(publishers.loScreen);
+    }
+
+    function publishHiCam (bool) {
+      bool = bool || false;
+      if (!bool) {
+        if (publishers.hiCam) {
+          session.unpublish(publishers.hiCam);
+        }
+        return;
+      }
+      publishers.hiCam = OT.initPublisher(null, {resolution: "1280x720"});      
+      session.publish(publishers.hiCam);
+    }
+
+    function publishLoCam (bool) {
+      bool = bool || false;
+      if (!bool) {
+        if (publishers.loCam) {
+          session.unpublish(publishers.loCam);
+        }
+        return;
+      }
+      publishers.loCam = OT.initPublisher(null, {resolution: "640x480"});      
+      session.publish(publishers.loCam);
+    }
+
+    function getAvg (numArr) {
+      var sum = 0, count = 0;
+      for (i in numArr) {
+        sum += numArr[i];
+        count++;
+      }
+      return sum / count;
+    }
+
+  </script>
+</body>
+</html>
