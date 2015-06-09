@@ -71,7 +71,7 @@
       });
       session.on('signal:startCamTests', function () {
         if (role === 'chrome') {        
-          publishHiCam(false, function () {
+          publishHiScreen(false, function () {
             publishHiCam(true);
           });
         }
@@ -119,7 +119,7 @@
         }
 
         var subscribeTime = document.createDocumentFragment();
-        var time = document.createElement("h2");
+        var time = document.createElement("h3");
         time.textContent = "" + splitTime + "ms for a " + width + "x" + height + " " + type + " stream";
         subscribeTime.appendChild(time);
         container.appendChild(subscribeTime);
