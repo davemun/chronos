@@ -94,9 +94,9 @@
 
         var type = event.stream.videoType;
 
-        if (type === 'screen' && screenTestCount++ >= runs) {
+        if (type === 'screen' && ++screenTestCount >= runs) {
           session.signal({type: 'startCamTests'}, function (err) {if (err) {triggerFailure()}});
-        } else if (type === 'camera' && camTestCount++ >= runs) {
+        } else if (type === 'camera' && ++camTestCount >= runs) {
           session.signal({type: 'endTests'}, function (err) {if (err) {triggerFailure()}});
           triggerSuccess();          
         }
@@ -156,8 +156,9 @@
         if (!bool) {
           if (publishers.hiScreen) {
             publishers.hiScreen.destroy();
+            callback();
+            return;
           }
-          return;
         }
         publishers.hiScreen = OT.initPublisher(null, {videoSource: "screen", maxResolution: { width: 1280, height: 720 }}, function () { callback() });
         session.publish(publishers.hiScreen);
@@ -169,8 +170,9 @@
         if (!bool) {
           if (publishers.hiCam) {
             session.unpublish(publishers.hiCam);
+            callback();
+            return;
           }
-          return;
         }
         publishers.hiCam = OT.initPublisher(null, {resolution: "1280x720"}, function () { callback() });      
         session.publish(publishers.hiCam);
