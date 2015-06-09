@@ -96,9 +96,14 @@
 
         if (type === 'screen' && ++screenTestCount >= runs) {
           session.signal({type: 'startCamTests'}, function (err) {if (err) {triggerFailure()}});
-        } else if (type === 'camera' && ++camTestCount >= runs) {
-          session.signal({type: 'endTests'}, function (err) {if (err) {triggerFailure()}});
-          triggerSuccess();          
+        } else if (type === 'camera' && camTestCount++ >= runs) {
+          session.signal({type: 'endTests'}, function (err) {
+            if (err) {
+              triggerFailure()
+            } else {
+              triggerSuccess();
+            }
+          });
         }
 
         var endTime = new Date().getTime();
