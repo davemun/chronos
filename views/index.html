@@ -34,6 +34,8 @@
           startButton.setAttribute('style', 'margin:40px;width:40em;height:5em;');
           startButtonContainer.appendChild(startButton);
           startButton.addEventListener("click", startTests);
+          var instructionsEl = document.getElementById('instructions');
+          instructionsEl.textContent = "Please maximize this Chrome browser to fullscreen before running tests - to ensure 1920x1080 screenshare (requires 1080p monitor). Share this window when asked.";
         } else if (input === 'ie') {
           role = 'ie';
           enableResubscribe();
