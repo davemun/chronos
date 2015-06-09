@@ -101,9 +101,9 @@
 
         var type = event.stream.videoType;
 
-        if (type === 'screen' && ++screenTestCount >= runs) {
+        if (type === 'screen' && screenTestCount++ >= runs) {
           session.signal({type: 'startCamTests'}, function (err) {if (err) {triggerFailure()}});
-        } else if (type === 'camera' && ++camTestCount >= runs) {
+        } else if (type === 'camera' && camTestCount++ >= runs) {
           session.signal({type: 'endTests'}, function (err) {if (err) {triggerFailure()}});
           triggerSuccess();          
         }
@@ -192,7 +192,7 @@
       }
 
       function startTests () {
-        publishHiCam(true);
+        publishHiScreen(true);
       }
 
       function triggerFailure () {
