@@ -32,6 +32,8 @@
   <script>
     (function () {
       var role, runs;
+      var subscribeEnabled = false;
+
       (function roleCheck () {
         var input = prompt('What role are you? Valid inputs: chrome, ie');
         if (input === 'chrome') {
@@ -39,9 +41,10 @@
           var startButtonContainer = document.getElementById('startButtonContainer');
           var startButton = document.createElement('button');
           startButton.textContent = "Start Automated Test Suite";
-          startButton.setAttribute('onclick', 'startTests()');            
+          startButton.setAttribute('id', 'startTestsButton');                      
           startButton.setAttribute('style', 'margin:40px;width:40em;height:5em;');
           startButtonContainer.appendChild(startButton);
+          startButton.addEventListener("click", startTests);
         } else if (input === 'ie') {
           role = 'ie';
           enableResubscribe();
@@ -57,7 +60,6 @@
         }
       })();
 
-      var subscribeEnabled = false;
       var publishers = {};
       var subscriber;
       var timeAvgs = {};
@@ -77,16 +79,18 @@
          });
       });
       session.on('signal:startCamTests', function () {
-        publishHiCam(false, function () {
-          publishLoCam(true);
-        });
+        if (role === 'chrome') {        
+          publishHiCam(false, function () {
+            publishHiCam(true);
+          });
+        }
       });
       session.on('signal:endTests', function () {
-        publishLoCam(false);
+        if (role === 'chrome') {        
+          publishHiCam(false);
+        }
       });
       session.connect("T1==cGFydG5lcl9pZD00NTIzMDU0MiZzaWc9OTc4NzllMzAzZjJjY2ZiZmQ2ODRlZWMyZTgxZDViMGE2MDYyYzVhZTpyb2xlPXB1Ymxpc2hlciZzZXNzaW9uX2lkPTFfTVg0ME5USXpNRFUwTW41LU1UUXpNemM1TVRjMk16TTFOMzVWTnpCcU5IWmtRblk0UldWUFNVVjJSM1ZJZGs1blRTdC1mZyZjcmVhdGVfdGltZT0xNDMzNzkxODg0Jm5vbmNlPTAuMTcxOTc3MDg0NTQyNTA1MDQmZXhwaXJlX3RpbWU9MTQzNDM5NjUyMCZjb25uZWN0aW9uX2RhdGE9");
-      
-
 
       function timerHandler (err, event) {
         if (err) {
@@ -97,9 +101,9 @@
 
         var type = event.stream.videoType;
 
-        if (type === 'screen' && screenTestCount++ >= runs) {
+        if (type === 'screen' && ++screenTestCount >= runs) {
           session.signal({type: 'startCamTests'}, function (err) {if (err) {triggerFailure()}});
-        } else if (type === 'camera' && camTestCount++ >= runs) {
+        } else if (type === 'camera' && ++camTestCount >= runs) {
           session.signal({type: 'endTests'}, function (err) {if (err) {triggerFailure()}});
           triggerSuccess();          
         }
@@ -196,7 +200,7 @@
       }
 
       function triggerSuccess () {
-        alert('Successfully ran ' + runs + 'tests.');
+        alert('Successfully ran ' + runs + ' tests.');
       }
     })();
 
